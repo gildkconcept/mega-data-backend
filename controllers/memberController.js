@@ -1,7 +1,7 @@
 const Member = require('../models/Member');
-const { Parser } = require('json2csv');
-const db = require('../database');
 
+const db = require('../database');
+const json2csv = require('json2csv').Parser;
 const memberController = {
   // Créer un nouveau membre
   createMember: (req, res) => {
