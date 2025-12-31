@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
+// Middleware d'authentification principal
 const authMiddleware = (requiredRole = null) => {
   return (req, res, next) => {
     // Récupérer le token depuis les headers
@@ -46,21 +47,33 @@ const authMiddleware = (requiredRole = null) => {
       req.user = decoded;
       
       // Vérifier le rôle si nécessaire
-      if (requiredRole && decoded.role !== requiredRole) {
-        return res.status(403).json({ 
-          success: false, 
-          message: 'Accès interdit. Rôle insuffisant.' 
-        });
+      if (requiredRole) {
+        // Définir la hiérarchie des rôles
+        const roleHierarchy = {
+          'member': ['member'],
+          'berger': ['berger', 'admin', 'super_admin'],
+          'admin': ['admin', 'super_admin'],
+          'super_admin': ['super_admin']
+        };
+        
+        const allowedRoles = roleHierarchy[requiredRole] || [requiredRole];
+        
+        if (!allowedRoles.includes(decoded.role)) {
+          return res.status(403).json({ 
+            success: false, 
+            message: 'Accès interdit. Rôle insuffisant.' 
+          });
+        }
       }
       
       // Logging optionnel en développement
       if (process.env.NODE_ENV === 'development') {
-        console.log(`Authentifié: ${decoded.username} (${decoded.role})`);
+        console.log(`✅ Authentifié: ${decoded.username} (${decoded.role})`);
       }
       
       next();
     } catch (error) {
-      console.error('Erreur vérification token:', error.message);
+      console.error('❌ Erreur vérification token:', error.message);
       
       if (error.name === 'TokenExpiredError') {
         return res.status(401).json({ 
