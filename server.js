@@ -19,13 +19,47 @@ const adminWeeklyPresenceRoutes = require('./routes/adminWeeklyPresenceRoutes');
 
 const app = express();
 
-// Middleware global
+// =============================================
+// SECTION CORS CORRIGÉE (SEULEMENT CE BLOC MODIFIÉ)
+// =============================================
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Liste des origines autorisées
+    const allowedOrigins = [
+      'http://localhost:3000',                    // Développement local
+      'https://mega-data.vercel.app',            // Ton frontend Vercel
+      'https://web-production-b92a.up.railway.app' // Backend lui-même
+    ];
+    
+    // Autoriser les requêtes sans origin (curl, Postman, apps mobiles)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Vérifier si l'origine est autorisée
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Pour le debug, autoriser temporairement en développement
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('⚠️ Autorisation CORS en dev pour:', origin);
+      return callback(null, true);
+    }
+    
+    // En production, bloquer les origines non autorisées
+    console.log('❌ CORS bloqué pour:', origin);
+    console.log('Origines autorisées:', allowedOrigins);
+    return callback(new Error('Not allowed by CORS'), false);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// =============================================
+// RESTE DU FICHIER INCHANGÉ
+// =============================================
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
