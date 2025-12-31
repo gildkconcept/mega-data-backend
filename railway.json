@@ -1,0 +1,16 @@
+{
+  "build": {
+    "builder": "nixpacks",
+    "buildCommand": "npm install"
+  },
+  "deploy": {
+    "startCommand": "node server.js",
+    "healthcheckPath": "/api/health",
+    "ports": [
+      {
+        "port": 3000,
+        "protocol": "http"
+      }
+    ]
+  }
+}
