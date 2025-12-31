@@ -1,6 +1,8 @@
 {
   "name": "mega-data-server",
   "version": "1.0.0",
+  "description": "API Mega-data pour gestion des membres d'église",
+  "main": "server.js",
   "engines": {
     "node": "18.x"
   },
@@ -16,5 +18,8 @@
     "jsonwebtoken": "^9.0.0",
     "pdfkit": "^0.17.2",
     "sqlite3": "^5.1.6"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
   }
 }
