@@ -1,16 +1,17 @@
-# Créer render.yaml
-cat > render.yaml << 'EOF'
 services:
   - type: web
     name: mega-data-backend
     env: node
+    region: frankfurt
+    plan: free
+    branch: main
+    rootDir: .
     buildCommand: npm install
     startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
-    healthCheckPath: /api/health
-    autoDeploy: true
-EOF
