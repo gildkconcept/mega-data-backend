@@ -4,7 +4,7 @@
   "description": "API Mega-data pour gestion des membres d'église",
   "main": "server.js",
   "engines": {
-      "node": "20.x"
+    "node": "20.x"
   },
   "scripts": {
     "start": "node server.js",
@@ -15,6 +15,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.19.2",
+    "iconv-lite": "^0.6.3",
     "jsonwebtoken": "^9.0.0",
     "pdfkit": "^0.17.2",
     "sqlite3": "^5.1.6"
