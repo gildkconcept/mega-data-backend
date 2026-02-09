@@ -3,9 +3,34 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
-const dbPath = path.join(__dirname, 'database.sqlite');
+// ============================================
+// CONFIGURATION DU CHEMIN DE LA BASE DE DONNÉES
+// ============================================
+const isProduction = process.env.NODE_ENV === 'production';
+const isRender = isProduction && process.env.RENDER;
 
-// Connexion à la base de données
+let dbPath;
+
+if (isRender) {
+  // SUR RENDER : utiliser /data (stockage persistant)
+  dbPath = path.join('/data', 'database.sqlite');
+  console.log('📍 Mode: Production sur Render');
+  console.log('📁 Chemin Render: /data/database.sqlite');
+} else if (isProduction) {
+  // PRODUCTION AILLEURS
+  dbPath = path.join(__dirname, 'database.sqlite');
+  console.log('📍 Mode: Production autre');
+} else {
+  // DÉVELOPPEMENT LOCAL
+  dbPath = path.join(__dirname, 'database.sqlite');
+  console.log('📍 Mode: Développement local');
+}
+
+console.log(`📁 Base de données: ${dbPath}`);
+
+// ============================================
+// CONNEXION À LA BASE DE DONNÉES
+// ============================================
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('❌ Erreur de connexion à la base de données:', err.message);
@@ -15,7 +40,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
   }
 });
 
-// Initialisation de la base de données
+// ============================================
+// INITIALISATION DE LA BASE DE DONNÉES
+// ============================================
 function initDatabase() {
   // Table des utilisateurs AVEC service_assigne pour les bergers
   db.run(`CREATE TABLE IF NOT EXISTS users (
@@ -72,7 +99,7 @@ function initDatabase() {
     }
   });
 
-  // Table des présences - NOUVELLE TABLE
+  // Table des présences
   db.run(`CREATE TABLE IF NOT EXISTS presences (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     membre_id INTEGER NOT NULL,
@@ -99,7 +126,9 @@ function initDatabase() {
   }, 1000);
 }
 
-// Créer les services par défaut
+// ============================================
+// CRÉER LES SERVICES PAR DÉFAUT
+// ============================================
 function createDefaultServices() {
   const services = [
     { nom: 'Groupe de louange et d\'adoration (GLA)', nom_court: 'GLA' },
@@ -131,7 +160,9 @@ function createDefaultServices() {
   });
 }
 
-// Fonction pour créer TOUS les comptes
+// ============================================
+// CRÉER TOUS LES COMPTES
+// ============================================
 async function createAllAccounts() {
   console.log('\n🔄 Création des comptes administrateurs et bergers...');
   
@@ -156,7 +187,7 @@ async function createAllAccounts() {
       service_assigne: null
     },
     
-    // Bergers avec service_assigne EXACTEMENT comme dans la table services
+    // Bergers avec service_assigne
     { 
       username: 'berger GLA',
       password: process.env.BERGER_GLA_PASSWORD || 'GLA12345',
@@ -164,7 +195,7 @@ async function createAllAccounts() {
       prenom: 'Berger',
       branche: 'Groupe de louange et d\'adoration',
       role: 'berger',
-      service_assigne: 'Groupe de louange et d\'adoration (GLA)'  // Exact match
+      service_assigne: 'Groupe de louange et d\'adoration (GLA)'
     },
     { 
       username: 'berger VE',
@@ -267,11 +298,11 @@ async function createAllAccounts() {
             db.run(
               'INSERT INTO users (username, password, nom, prenom, branche, role, service_assigne) VALUES (?, ?, ?, ?, ?, ?, ?)',
               [
-                account.username, 
-                hashedPassword, 
-                account.nom, 
-                account.prenom, 
-                account.branche, 
+                account.username,
+                hashedPassword,
+                account.nom,
+                account.prenom,
+                account.branche,
                 account.role,
                 account.service_assigne
               ],
@@ -287,7 +318,7 @@ async function createAllAccounts() {
               }
             );
           } else {
-            // Mettre à jour si nécessaire (SURTOUT service_assigne)
+            // Mettre à jour si nécessaire
             const needsUpdate = 
               row.role !== account.role || 
               row.service_assigne !== account.service_assigne;
@@ -319,7 +350,9 @@ async function createAllAccounts() {
   }
 }
 
-// Fonction utilitaire pour normaliser les noms de service
+// ============================================
+// FONCTION DE NORMALISATION DES SERVICES
+// ============================================
 function normalizeServiceName(serviceName) {
   if (!serviceName) return null;
   
@@ -350,7 +383,9 @@ function normalizeServiceName(serviceName) {
   return serviceMapping[normalized] || serviceName.trim();
 }
 
-// Fonction pour vérifier l'état des bergers
+// ============================================
+// VÉRIFICATION DES BERGERS (debug)
+// ============================================
 function checkBergersStatus() {
   console.log('\n🔍 Vérification des bergers...');
   
@@ -381,5 +416,8 @@ function checkBergersStatus() {
 // Exécuter la vérification après un délai
 setTimeout(checkBergersStatus, 3000);
 
+// ============================================
+// EXPORTATION
+// ============================================
 module.exports = db;
 module.exports.normalizeServiceName = normalizeServiceName;
