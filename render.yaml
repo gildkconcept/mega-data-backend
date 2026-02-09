@@ -1,9 +1,10 @@
 services:
   - type: web
     name: mega-data-backend
-    env: docker
+    env: node
     region: frankfurt
-    dockerfilePath: ./Dockerfile
+    buildCommand: npm ci --only=production
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
