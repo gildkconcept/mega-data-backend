@@ -1,10 +1,9 @@
 services:
   - type: web
     name: mega-data-backend
-    env: node
-    region: frankfurt  # ou: oregon, ohio, singapore
-    buildCommand: npm install
-    startCommand: npm start
+    env: docker
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: NODE_ENV
         value: production
@@ -12,11 +11,6 @@ services:
         value: 10000
       - key: JWT_SECRET
         generateValue: true
-      - key: ADMIN_USERNAME_1
-        value: Pasteur Abel Aké
-      - key: ADMIN_PASSWORD_1
-        value: Admin12345
-    healthCheckPath: /api/health
     disk:
       name: data
       mountPath: /data
