@@ -1,31 +1,18 @@
 {
   "name": "mega-data-server",
   "version": "1.0.0",
-  "description": "API Mega-data - Gestion des membres d'église",
   "main": "server.js",
   "scripts": {
     "start": "node start.js",
-    "dev": "nodemon server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon server.js"
   },
   "engines": {
-    "node": "18.x",
-    "npm": "9.x"
+    "node": "18.x"
   },
-  "keywords": [
-    "mega-data",
-    "église",
-    "gestion",
-    "membres",
-    "api",
-    "nodejs"
-  ],
-  "author": "Mega-data Église",
-  "license": "MIT",
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "body-parser": "^1.20.4",
     "cors": "^2.8.5",
+    "debug": "^4.3.4",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "json2csv": "^5.0.7",
