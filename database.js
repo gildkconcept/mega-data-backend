@@ -1,6 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
 require('dotenv').config();
 
 // ============================================
@@ -16,6 +17,16 @@ if (isRender) {
   dbPath = path.join('/data', 'database.sqlite');
   console.log('📍 Mode: Production sur Render');
   console.log('📁 Chemin Render: /data/database.sqlite');
+  
+  // Créer le dossier /data s'il n'existe pas
+  try {
+    if (!fs.existsSync('/data')) {
+      fs.mkdirSync('/data', { recursive: true });
+      console.log('📁 Dossier /data créé');
+    }
+  } catch (error) {
+    console.error('❌ Erreur création dossier /data:', error.message);
+  }
 } else if (isProduction) {
   // PRODUCTION AILLEURS
   dbPath = path.join(__dirname, 'database.sqlite');

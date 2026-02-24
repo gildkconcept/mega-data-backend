@@ -1,18 +1,20 @@
+# backend/render.yaml
 services:
   - type: web
     name: mega-data-backend
     env: node
-    region: frankfurt
-    buildCommand: npm ci --only=production
-    startCommand: npm start
+    buildCommand: npm install
+    startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
       - key: JWT_SECRET
         generateValue: true
-    disk:
-      name: data
-      mountPath: /data
-      sizeGB: 1
+      - key: ADMIN_USERNAME_1
+        value: admin
+      - key: ADMIN_PASSWORD_1
+        value: Admin123!
+      - key: ADMIN_USERNAME_2
+        value: superadmin
+      - key: ADMIN_PASSWORD_2
+        value: SuperAdmin123!

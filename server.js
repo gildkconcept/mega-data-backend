@@ -20,14 +20,15 @@ const adminWeeklyPresenceRoutes = require('./routes/adminWeeklyPresenceRoutes');
 const app = express();
 
 // =============================================
-// SECTION CORS CORRIGÉE (SEULEMENT CE BLOC MODIFIÉ)
+// SECTION CORS CORRIGÉE POUR RENDER
 // =============================================
 app.use(cors({
   origin: function (origin, callback) {
     // Liste des origines autorisées
     const allowedOrigins = [
       'http://localhost:3000',                    // Développement local
-      'https://mega-data.vercel.app',            // Ton frontend Vercel
+      'https://mega-data.vercel.app',             // Ton frontend Vercel
+      'https://mega-data.netlify.app',             // Alternative Netlify
       'https://web-production-b92a.up.railway.app' // Backend lui-même
     ];
     
@@ -47,7 +48,13 @@ app.use(cors({
       return callback(null, true);
     }
     
-    // En production, bloquer les origines non autorisées
+    // En production sur Render, autoriser toutes les origines pour tester
+    if (process.env.RENDER) {
+      console.log('🌐 Render: Autorisation CORS pour:', origin);
+      return callback(null, true);
+    }
+    
+    // En production autre, bloquer les origines non autorisées
     console.log('❌ CORS bloqué pour:', origin);
     console.log('Origines autorisées:', allowedOrigins);
     return callback(new Error('Not allowed by CORS'), false);
@@ -58,7 +65,7 @@ app.use(cors({
 }));
 
 // =============================================
-// RESTE DU FICHIER INCHANGÉ
+// CONFIGURATION EXPRESS
 // =============================================
 
 app.use(express.json());
@@ -66,7 +73,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Middleware de logging
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} ${req.method} ${req.url} ${req.ip}`);
+  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
   next();
 });
 
@@ -86,11 +93,17 @@ app.use('/api/admin/weekly', adminWeeklyPresenceRoutes);
 
 // Route racine
 app.get('/', (req, res) => {
+  const hostname = req.hostname;
+  const isRender = hostname.includes('render.com') || hostname.includes('onrender.com');
+  
   res.json({ 
     message: 'API Mega-data - Gestion des membres d\'église',
     version: '2.2.0',
     status: 'online',
     timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    host: hostname,
+    platform: isRender ? 'Render' : 'Local/Other',
     features: [
       'Authentification JWT',
       'Gestion des membres',
@@ -113,25 +126,52 @@ app.get('/', (req, res) => {
       health: '/api/health',
       stats: '/api/stats',
       protected: '/api/protected'
-    },
-    environment: process.env.NODE_ENV || 'development'
+    }
   });
 });
 
-// Route de santé
+// Route de santé (AMÉLIORÉE POUR RENDER)
 app.get('/api/health', (req, res) => {
+  const startTime = Date.now();
+  
   db.get('SELECT 1 as healthy', (err) => {
     const dbHealthy = !err;
+    const dbResponseTime = Date.now() - startTime;
     
     // Vérifier l'état des tables
     db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, tables) => {
       const tablesList = tables ? tables.map(t => t.name) : [];
+      
+      // Vérifier le disque sur Render
+      const fs = require('fs');
+      let diskStatus = 'unknown';
+      let dbPathInfo = 'N/A';
+      
+      try {
+        if (process.env.RENDER) {
+          const dataDir = '/data';
+          if (fs.existsSync(dataDir)) {
+            const stats = fs.statSync(dataDir);
+            diskStatus = 'mounted';
+            dbPathInfo = dataDir;
+          } else {
+            diskStatus = 'not_found';
+          }
+        } else {
+          diskStatus = 'local';
+          dbPathInfo = __dirname;
+        }
+      } catch (diskErr) {
+        diskStatus = 'error: ' + diskErr.message;
+      }
       
       res.json({ 
         success: true,
         message: 'Serveur Mega-data en ligne',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development',
+        platform: process.env.RENDER ? 'Render' : 'Local/Other',
         services: {
           database: dbHealthy ? 'healthy' : 'unhealthy',
           api: 'healthy',
@@ -139,11 +179,23 @@ app.get('/api/health', (req, res) => {
           pdf: 'available',
           presence: 'available',
           admin_presence: 'available',
-          weekly_reports: 'available'
+          weekly_reports: 'available',
+          disk: diskStatus
+        },
+        performance: {
+          db_response_ms: dbResponseTime,
+          node_version: process.version,
+          memory_usage: process.memoryUsage()
         },
         tables: tablesList,
-        version: '2.2.0',
-        node_version: process.version
+        disk_info: {
+          path: dbPathInfo,
+          status: diskStatus
+        },
+        render_specific: process.env.RENDER ? {
+          service_id: process.env.RENDER_SERVICE_ID,
+          instance_id: process.env.RENDER_INSTANCE_ID
+        } : null
       });
     });
   });
@@ -605,22 +657,31 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Démarrer le serveur
-const PORT = process.env.PORT || 3000;
+// =============================================
+// DÉMARRAGE DU SERVEUR (CORRIGÉ POUR RENDER)
+// =============================================
 
-const server = app.listen(PORT, () => {
+// PORT CORRIGÉ : 10000 pour Render, 5000 en local
+const PORT = process.env.PORT || 10000;
+
+// Écouter sur 0.0.0.0 pour Render
+const HOST = '0.0.0.0';
+
+const server = app.listen(PORT, HOST, () => {
   console.log('\n' + '='.repeat(70));
   console.log('🚀 SERVEUR MEGA-DATA V2.2 DÉMARRÉ');
   console.log('='.repeat(70));
   console.log(`✅ Port: ${PORT}`);
-  console.log(`🌐 URL: http://localhost:${PORT}`);
-  console.log(`🔗 Frontend: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+  console.log(`✅ Host: ${HOST}`);
+  console.log(`🌐 URL: http://${HOST}:${PORT}`);
+  console.log(`🔗 Frontend autorisés: http://localhost:3000, https://mega-data.vercel.app`);
   console.log(`📁 Base de données: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔐 Authentification: JWT`);
   console.log(`📊 PDF Export: ACTIVÉ`);
   console.log(`📋 Système de présence: ACTIVÉ`);
   console.log(`📈 Stats avancées: ACTIVÉ`);
   console.log(`📅 Export hebdomadaire: ACTIVÉ`);
+  console.log(`🔄 Plateforme: ${process.env.RENDER ? 'Render' : 'Local'}`);
   console.log('='.repeat(70));
   console.log('\n📋 ENDPOINTS DISPONIBLES:');
   console.log('├── 🔐 AUTHENTIFICATION');
@@ -677,26 +738,46 @@ const server = app.listen(PORT, () => {
   console.log('• Service Book');
   console.log('• Gestion de culte');
   console.log('='.repeat(70));
-  console.log('\n📊 STATISTIQUES ACTUELLES:');
   
-  // Afficher quelques stats au démarrage
+  // Afficher quelques stats au démarrage (avec délai pour DB)
   setTimeout(() => {
+    console.log('\n📊 STATISTIQUES ACTUELLES:');
+    
     db.get('SELECT COUNT(*) as total FROM membres', (err, membres) => {
       if (!err && membres) {
+        console.log(`   • Membres: ${membres.total}`);
+        
         db.get('SELECT COUNT(*) as total FROM users', (err, users) => {
           if (!err && users) {
+            console.log(`   • Utilisateurs: ${users.total}`);
+            
             db.get('SELECT COUNT(*) as total FROM presences', (err, presences) => {
-              console.log(`   • Membres: ${membres.total}`);
-              console.log(`   • Utilisateurs: ${users.total}`);
               console.log(`   • Présences: ${presences ? presences.total : 0}`);
               console.log('='.repeat(70));
               console.log('\n✅ Prêt à recevoir des connexions...\n');
+              
+              // Info spécifique Render
+              if (process.env.RENDER) {
+                console.log('🌐 RENDER SPECIFIC:');
+                console.log(`   • Service ID: ${process.env.RENDER_SERVICE_ID || 'N/A'}`);
+                console.log(`   • Instance ID: ${process.env.RENDER_INSTANCE_ID || 'N/A'}`);
+                console.log(`   • Database Path: /data/database.sqlite`);
+                console.log('='.repeat(70));
+              }
             });
+          } else {
+            console.log('   • Base de données: En cours d\'initialisation...');
+            console.log('='.repeat(70));
+            console.log('\n✅ Prêt à recevoir des connexions...\n');
           }
         });
+      } else {
+        console.log('   • Base de données: En cours d\'initialisation...');
+        console.log('='.repeat(70));
+        console.log('\n✅ Prêt à recevoir des connexions...\n');
       }
     });
-  }, 1000);
+  }, 2000);
 });
 
 // Gestion propre de l'arrêt
@@ -718,7 +799,10 @@ process.on('SIGINT', () => {
 // Gestion des erreurs non capturées
 process.on('uncaughtException', (err) => {
   console.error('❌ Exception non capturée:', err);
-  process.exit(1);
+  // Ne pas quitter le processus en production
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
 });
 
 process.on('unhandledRejection', (reason, promise) => {
