@@ -27,9 +27,7 @@ app.use(cors({
     // Liste des origines autorisées
     const allowedOrigins = [
       'http://localhost:3000',                    // Développement local
-      'https://mega-data.vercel.app',             // Ton frontend Vercel
-      'https://mega-data.netlify.app',             // Alternative Netlify
-      'https://web-production-b92a.up.railway.app' // Backend lui-même
+      'https://mega-data-frontend.vercel.app'     // Frontend Vercel (À MODIFIER AVEC VOTRE URL RÉELLE)
     ];
     
     // Autoriser les requêtes sans origin (curl, Postman, apps mobiles)
@@ -39,6 +37,12 @@ app.use(cors({
     
     // Vérifier si l'origine est autorisée
     if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Pour les sous-domaines Vercel (déploiements preview)
+    if (origin.includes('vercel.app')) {
+      console.log('🌐 Autorisation sous-domaine Vercel:', origin);
       return callback(null, true);
     }
     
@@ -674,7 +678,7 @@ const server = app.listen(PORT, HOST, () => {
   console.log(`✅ Port: ${PORT}`);
   console.log(`✅ Host: ${HOST}`);
   console.log(`🌐 URL: http://${HOST}:${PORT}`);
-  console.log(`🔗 Frontend autorisés: http://localhost:3000, https://mega-data.vercel.app`);
+  console.log(`🔗 Frontend autorisés: http://localhost:3000, https://mega-data-frontend.vercel.app`);
   console.log(`📁 Base de données: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔐 Authentification: JWT`);
   console.log(`📊 PDF Export: ACTIVÉ`);
