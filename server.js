@@ -27,7 +27,7 @@ app.use(cors({
     // Liste des origines autorisées
     const allowedOrigins = [
       'http://localhost:3000',                    // Développement local
-      'https://mega-data-frontend.vercel.app'     // Frontend Vercel (À MODIFIER AVEC VOTRE URL RÉELLE)
+      'https://mega-data.vercel.app'               // Frontend Vercel
     ];
     
     // Autoriser les requêtes sans origin (curl, Postman, apps mobiles)
@@ -678,7 +678,7 @@ const server = app.listen(PORT, HOST, () => {
   console.log(`✅ Port: ${PORT}`);
   console.log(`✅ Host: ${HOST}`);
   console.log(`🌐 URL: http://${HOST}:${PORT}`);
-  console.log(`🔗 Frontend autorisés: http://localhost:3000, https://mega-data-frontend.vercel.app`);
+  console.log(`🔗 Frontend autorisés: http://localhost:3000, https://mega-data.vercel.app`);
   console.log(`📁 Base de données: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔐 Authentification: JWT`);
   console.log(`📊 PDF Export: ACTIVÉ`);
